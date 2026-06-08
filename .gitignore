@@ -1,0 +1,10 @@
+# Deno
+.deno/
+deno.lock
+
+# dnt output
+npm/
+
+# misc
+.env
+.DS_Store
