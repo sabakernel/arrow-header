@@ -1,6 +1,5 @@
 # Deno
 .deno/
-deno.lock
 
 # dnt output
 npm/
