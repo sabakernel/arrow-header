@@ -1,30 +1,39 @@
 # arrow-header
 
-`029>PROTOCOLNAME.v1>TYPE>200>` のような `>`
-で区切られた独自の固定長ヘッダーをパース・生成するライブラリです。
+Japanese version: [README.ja.md](README.ja.md)
 
-## 特徴
+Note: This English README was produced using machine translation. Please refer to the Japanese
+original above for the authoritative text.
 
-- **純Deno製・外部依存なし**: 標準ランタイムの機能のみで動作します。
-- **堅牢なバリデーション**:
-  桁数のズレ、不要なゼロ埋め、Int64のオーバーフロー、不正なデリミタなどを厳格にチェックします。
-- **マルチバイト（日本語）対応**: 文字数ではなく、UTF-8の **バイト長**
-  を基準にヘッダサイズを正確に計算します。
-- **ストリームフレンドリー**:
-  入力文字列にヘッダ以降のデータ（コンテンツ本体など）が結合されていても、ヘッダ部分だけを正確に切り出せます。
-- **BigIntサポート**: `ContentSize` は
-  `bigint`（Int64の正の数の範囲）として扱うため、大容量データにも対応できます。
+`arrow-header` is a small library to parse and build a custom fixed-length header format separated
+by the `>` character, for example:
+
+```
+029>PROTOCOLNAME.v1>TYPE>200>
+```
+
+## Features
+
+- Pure Deno, zero external dependencies — runs on the standard runtime only.
+- Strict validation: checks for length mismatches, prohibited zero-padding, Int64 overflow, invalid
+  delimiters, and other format violations.
+- Multibyte (Japanese) safe: header sizes are calculated using UTF-8 byte length, not character
+  count.
+- Stream-friendly: can extract the header portion even when the input string contains the body
+  (content) appended after the header.
+- BigInt support: `ContentSize` is treated as a `bigint` (positive Int64 range), so large payloads
+  are supported.
 
 ---
 
-## 使い方
+## Usage
 
-### 1. ヘッダーの生成 (`buildHead`)
+### 1. Build a header (`buildHead`)
 
-`Head`
-オブジェクトから、プロトコル仕様に準拠した文字列を組み立てます。先頭にはゼロ埋めされた全体バイト長が自動で付与されます。
+Assemble a header string from a `Head` object. The function automatically prefixes the total byte
+length (zero-padded).
 
-```typescript
+```ts
 const head: Head = {
   ContentVersion: 'PROTOCOLNAME.v1',
   ContentType: 'JSON',
@@ -33,20 +42,21 @@ const head: Head = {
 
 const headerString = buildHead(head);
 console.log(headerString);
-// 出力: 029>PROTOCOLNAME.v1>JSON>200>
+// Output: 029>PROTOCOLNAME.v1>JSON>200>
 ```
 
-### 2. ヘッダーの解析 (`readHead`)
+### 2. Read a header (`readHead`)
 
-文字列からヘッダ部分を解析し、オブジェクトとして抽出します。後ろにコンテンツ本体がくっついていても問題ありません。
+Parse the header portion from a string and return it as an object. The function tolerates additional
+data (the content body) appended after the header.
 
-```typescript
-const input = "029>PROTOCOLNAME.v1>JSON>200>{"message":"hello"}";
+```ts
+const input = '029>PROTOCOLNAME.v1>JSON>200>{"message":"hello"}';
 
 const head = readHead(input);
 console.log(head);
 /*
-出力:
+Output:
 {
   ContentVersion: "PROTOCOLNAME.v1",
   ContentType: "JSON",
@@ -57,37 +67,36 @@ console.log(head);
 
 ---
 
-## 制限事項
+## Limitations
 
-- **`MaxHeadSize` (126バイト)**:
-  最初の数字（LengthPrefix）を含めたヘッダ全体の長さは最大126バイトまでです。
-- **禁止文字**: `ContentVersion` と `ContentType` には、区切り文字である `>`
-  を含めることはできません。
-- **ゼロ埋めのルール**:
-- 先頭のヘッダ長（LengthPrefix）は、常に3桁でゼロ埋めされている必要があります（例: `029`）。
-- `ContentSize` には不要なゼロ埋め（例: `020`）は許容されません（ただし、単体の `0`
-  は許容されます）。
+- **MaxHeadSize (126 bytes)**: The total header length including the initial length prefix
+  (LengthPrefix) must not exceed 126 bytes.
+- **Forbidden character**: `ContentVersion` and `ContentType` must not contain the delimiter
+  character `>`.
+- **Zero-padding rules**:
+  - The leading header length (`LengthPrefix`) must always be three digits, zero-padded (for example
+    `029`).
+  - `ContentSize` must not have unnecessary leading zeros (for example `020` is invalid), except the
+    single value `0` is allowed.
 
-```text
-029 > PROTOCOLNAME.v1 > TYPE > 200 > (後続データ...)
+```
+029 > PROTOCOLNAME.v1 > TYPE > 200 > (followed by data...)
  [--]   [------------]   [--]   [-]
   |           |           |      |
-  |           |           |      +-- ContentSize   (バイト数/ゼロ埋め不可)
-  |           |           +--------- ContentType   ('>'不可)
-  |           +--------------------- ContentVersion('>'不可)
-  +--------------------------------- LengthPrefix  (全体長/3桁固定)
+  |           |           |      +-- ContentSize   (bytes / no zero-padding)
+  |           |           +--------- ContentType   ('>' not allowed)
+  |           +--------------------- ContentVersion ('>' not allowed)
+  +--------------------------------- LengthPrefix  (total length / 3 digits)
 
-  └─────────────── 最大 126 バイト (MaxHeadSize) ───────────────┘
+  └─────────────── Maximum 126 bytes (MaxHeadSize) ───────────────┘
 ```
 
-## なぜ `>` なのか
+## Why `>`?
 
-このプロトコルで区切り文字（デリミタ）として `,` や `|` ではなく `>`
-を採用したのには、以下の理由があります。
-
-- **JSONなどとの衝突回避**:
-  `,`（カンマ）にしてしまうと、ヘッダーの直後に続くコンテンツ本体（JSONなど）のパース時に、境界の誤判定やバグを引き起こすリスクが高まるため。
-- **視認性**: `|`（パイプ）は、フォントによっては数字の `1` やアルファベットの
-  `l`（エル）、`I`（アイ）と視覚的に誤認しやすく、デバッグ時のストレスになるため。
-- **ストリームの表現**: `Header -> Content -> Header...`
-  と連続するデータ構造において、次へ進む『矢印』としての意味も持たせています。
+- Avoid conflicts with JSON and other payloads: using `,` could cause parsing ambiguities with
+  content that follows immediately after the header (for example JSON), so `>` reduces
+  boundary-guessing risks.
+- Readability: the pipe character `|` can be visually confused with `1`, `l`, or `I` in some fonts;
+  `>` offers better clarity while debugging.
+- Stream semantics: in streaming scenarios like `Header -> Content -> Header...`, `>` reads
+  naturally as an arrow/separator between segments.

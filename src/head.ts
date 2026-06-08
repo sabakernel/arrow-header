@@ -4,37 +4,37 @@
 // ContentSizeが0のときはしっかり0と書く 空文字はダメ
 
 /**
- * 最初の数字（LengthPrefix）の最大桁数です。
+ * The maximum number of digits for the initial number (LengthPrefix).
  */
 export const MaxLengthPrefixDigit = 3; // 最初の数字(LengthPrefix)は3桁まで
 
 /**
- * ヘッダ全体のUTF-8（バイト単位）での最大長です。
- * `029>PROTOCOLNAME.v1>TYPE>200>` 全体の長さを表します。
- * 最初のLengthPrefix部分を含めた長さである点に注意してください。
+ * The maximum UTF-8 byte length of the entire header.
+ * Represents the full length of strings like `029>PROTOCOLNAME.v1>TYPE>200>`.
+ * Note that this length includes the initial LengthPrefix portion.
  * @see MaxLengthPrefixDigit
  */
 export const MaxHeadSize = 126;
 
 /**
- * ヘッダ内のセクション数（`>` で区切られる区間の数）です。
+ * The number of sections in the header (segments separated by `>`).
  *
- * Headは4つの区間に分かれます。(x>x>x>x>)
+ * A head is divided into four sections: (x>x>x>x>)
  */
 export const HeadSectionNum = 4;
 
 /**
- * `readHead` の出力および `buildHead` の入力となるヘッダ情報です。
- * - `ContentVersion`, `ContentType` には `>` を含めてはいけません。
- * - 全体サイズが `MaxHeadSize` 以内に収まる必要があります。
+ * Header information used as the output of `readHead` and the input of `buildHead`.
+ * - `ContentVersion` and `ContentType` must not contain `>`.
+ * - The total size must fit within `MaxHeadSize`.
  * @see MaxHeadSize
  */
 export interface Head {
-  /** コンテンツのバージョン */
+  /** Content version */
   ContentVersion: string;
-  /** コンテンツの種類 */
+  /** Content type */
   ContentType: string;
-  /** 後続するコンテンツのバイト数（0以上のbigint） */
+  /** Byte length of the following content (bigint ≥ 0) */
   ContentSize: bigint;
 }
 
@@ -58,9 +58,9 @@ function utf8ByteLength(b: Uint8Array): number {
 }
 
 /**
- * 10進数の数字文字列を厳格にバリデーションして整数に変換します。
- * @throws {Error} 負の数、小数点、前後のスペース、文字混じりの場合
- * @throws {Error} JavaScriptの安全な整数の限界（Number.isSafeInteger）を超えた場合
+ * Strictly validates a decimal digit string and converts it to an integer.
+ * @throws {Error} If the input is negative, contains decimals, leading/trailing spaces, or non-digit characters.
+ * @throws {Error} If it exceeds JavaScript's safe integer limit (Number.isSafeInteger).
  */
 function parseStrictInt10(s: string): number {
   if (!/^\d+$/.test(s)) {
@@ -77,10 +77,10 @@ function parseStrictInt10(s: string): number {
 }
 
 /**
- * 数字文字列を正の数（0以上）のint64（bigint）としてパースします。
- * Go言語の `strconv.ParseInt(s, 10, 64)` の正数制限版と同等の挙動をします（"0" は許容）。
- * @throws {Error} 空文字、整数以外の文字、小数点を含む場合
- * @throws {Error} int64 の範囲（0 〜 2^63 - 1）を超える場合
+ * Parses a numeric string as a non-negative int64 (bigint).
+ * Behaves like Go's `strconv.ParseInt(s, 10, 64)` but restricted to non-negative values ("0" is allowed).
+ * @throws {Error} If the input is empty, contains non-integer characters, or contains a decimal point.
+ * @throws {Error} If it exceeds the int64 range (0 to 2^63 - 1).
  */
 function parsePositiveInt64(s: string): bigint {
   // 負の値はここでエラー
@@ -107,13 +107,13 @@ function parsePositiveInt64(s: string): bigint {
 }
 
 /**
- * Headオブジェクトから、仕様に準拠したヘッダ文字列を組み立てます。
- * 日本語などのマルチバイト文字列が含まれる場合、文字数ではなく **UTF-8のバイト長** を基準にヘッダ長を計算します。
- * @param {Head} h - 組み立て元のヘッダ情報
- * @returns {string} 長さプレフィックス（ゼロ埋め3桁）から始まるヘッダ文字列
- * @throws {Error} `ContentVersion` または `ContentType` に `>` が含まれる場合
- * @throws {Error} `ContentSize` が負の値の場合
- * @throws {Error} 組み立てたヘッダの総バイト数が `MaxHeadSize` を超える場合
+ * Builds a header string compliant with the specification from a Head object.
+ * If multibyte characters such as Japanese are included, header length is calculated based on UTF-8 byte length rather than character count.
+ * @param {Head} h - The header information to build from.
+ * @returns {string} A header string starting with a zero-padded 3-digit length prefix.
+ * @throws {Error} If `ContentVersion` or `ContentType` contains `>`.
+ * @throws {Error} If `ContentSize` is negative.
+ * @throws {Error} If the total byte length of the built header exceeds `MaxHeadSize`.
  * @see MaxHeadSize
  */
 export function buildHead(h: Head): string {
@@ -149,15 +149,15 @@ export function buildHead(h: Head): string {
 }
 
 /**
- * 文字列からヘッダ部分（Head）を解析して抽出します。
- * 入力文字列にヘッダ以降のデータ（コンテンツ本体など）が含まれていても、先頭のプレフィックス長に従って正しく解析されます。
- * @param {string} s - 解析対象の文字列
- * @returns {Head} 解析されたヘッダオブジェクト
- * @throws {Error} 入力文字列が空の場合
- * @throws {Error} 長さプレフィックスがゼロ埋め3桁でない場合、または数値としてパースできない場合
- * @throws {Error} 入力文字列のバイト長が、プレフィックスで指定されたヘッダ長に満たない場合
- * @throws {Error} ヘッダの区切り（`>`）の個数が不正な場合
- * @throws {Error} `ContentSize` に不要なゼロ埋め（例: `"020"`）がある場合、または負の数・数値以外の場合
+ * Parses and extracts the header portion (Head) from a string.
+ * The input may include data after the header (such as content body), but parsing is based on the initial prefix length.
+ * @param {string} s - The string to parse.
+ * @returns {Head} The parsed header object.
+ * @throws {Error} If the input string is empty.
+ * @throws {Error} If the length prefix is not a zero-padded 3-digit number or cannot be parsed as a number.
+ * @throws {Error} If the input string's byte length is less than the header length specified by the prefix.
+ * @throws {Error} If the number of header delimiters (`>`) is invalid.
+ * @throws {Error} If `ContentSize` has unnecessary zero-padding (e.g. "020"), or is negative or non-numeric.
  * @see HeadSectionNum
  */
 function getHeadSize(s: string): number {
@@ -207,14 +207,12 @@ function getHeadSize(s: string): number {
 }
 
 /**
- * 文字列からヘッダ部分（Head）を解析して抽出します。
- * 入力文字列にヘッダ以降のデータ（コンテンツ本体など）が含まれていても問題ありません。
- * @param {string} s - 解析対象の文字列（ヘッダ以降のデータを含んでいても可）
- * @returns {Head} 解析されたヘッダオブジェクト
- * @throws {Error} 入力文字列が空の場合
- * @throws {Error} 入力文字列のバイト長が、解析したヘッダ長（LengthPrefix）に満たない場合
- * @throws {Error} ヘッダの区切り（`>`）の個数が不正な場合
- * @throws {Error} `ContentSize` が不正（"0" 以外の不要なゼロ埋めがあるなど）な場合
+ * Parses and extracts the header portion (Head) from a string.
+ * The input string may also include data after the header (such as the content body).
+ * @param {string} s - The string to parse (may include data after the header).
+ * @returns {Head} The parsed header object.
+ * @throws {Error} If the header format is invalid.
+ * @throws {Error} If ContentSize is invalid.
  * @see HeadSectionNum
  */
 export function readHead(s: string): Head {
@@ -251,10 +249,8 @@ export function readHead(s: string): Head {
 
   try {
     contentSize = parsePositiveInt64(contentSizeStr);
-  } catch (e) {
-    throw new Error('invalid contentSize', {
-      cause: e,
-    });
+  } catch {
+    throw new Error('invalid contentSize');
   }
 
   return {
