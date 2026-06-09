@@ -108,7 +108,7 @@ function parsePositiveInt64(s: string): bigint {
 
 /**
  * Builds a header string compliant with the specification from a Head object.
- * If multibyte characters such as Japanese are included, header length is calculated based on UTF-8 byte length rather than character count.
+ * Header length is always calculated based on UTF-8 byte length, not character count.
  * @param {Head} h - The header information to build from.
  * @returns {string} A header string starting with a zero-padded 3-digit length prefix.
  * @throws {Error} If `ContentVersion` or `ContentType` contains `>`.
@@ -208,7 +208,7 @@ function getHeadSize(s: string): number {
 
 /**
  * Parses and extracts the header portion (Head) from a string.
- * The input string may also include data after the header (such as the content body).
+ * The input string can include additional data after the header, such as content.
  * @param {string} s - The string to parse (may include data after the header).
  * @returns {Head} The parsed header object.
  * @throws {Error} If the header format is invalid.
