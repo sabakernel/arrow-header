@@ -19,6 +19,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: denoland/setup-deno@v2
         with:
@@ -27,4 +29,4 @@ jobs:
       - name: Check publish
         run: deno publish --dry-run
       - name: Publish to JSR
-        run: deno publish
+        run: timeout 10m deno publish
