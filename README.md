@@ -1,8 +1,8 @@
 # arrow-header
+
 [![JSR](https://jsr.io/badges/@sabakernel/arrow-header)](https://jsr.io/@sabakernel/arrow-header)
 
-JSR:
-https://jsr.io/@sabakernel/arrow-header
+JSR: https://jsr.io/@sabakernel/arrow-header
 
 ---
 Japanese version: [README.ja.md](README.ja.md)
@@ -28,7 +28,6 @@ by the `>` character, for example:
   (content) appended after the header.
 - BigInt support: `ContentSize` is treated as a `bigint` (positive Int64 range), so large payloads
   are supported.
-
 ---
 
 ## Usage
