@@ -1,5 +1,10 @@
 # arrow-header
+[![JSR](https://jsr.io/badges/@sabakernel/arrow-header)](https://jsr.io/@sabakernel/arrow-header)
 
+JSR:
+https://jsr.io/@sabakernel/arrow-header
+
+---
 Japanese version: [README.ja.md](README.ja.md)
 
 Note: This English README was produced using machine translation. Please refer to the Japanese
