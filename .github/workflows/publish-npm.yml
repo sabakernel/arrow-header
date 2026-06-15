@@ -15,11 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      DENO_DIR: ${{ runner.temp }}/deno-cache
 
     steps:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Prepare Deno cache directory
+        run: mkdir -p "$DENO_DIR"
 
       - uses: denoland/setup-deno@v2
         with:
@@ -31,7 +36,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org/'
 
       - name: Build npm package
-        run: deno run --allow-read --allow-write build_npm.ts
+        run: deno task build
 
       - name: Setup npm auth
         run: |
