@@ -17,6 +17,14 @@ await build({
     name: denoJson.name,
     version: denoJson.version,
     description: 'Robust > delimited stream header parser & builder for Deno and npm.',
+    repository: {
+      type: 'git',
+      'url': 'git+https://github.com/sabakernel/arrow-header.git',
+    },
+    bugs: {
+      url: 'https://github.com/sabakernel/arrow-header/issues',
+    },
+    homepage: 'https://github.com/sabakernel/arrow-header#readme',
     license: 'MIT',
     author: 'sabakernel',
     keywords: [
