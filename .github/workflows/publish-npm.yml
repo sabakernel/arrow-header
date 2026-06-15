@@ -13,41 +13,46 @@ jobs:
   publish:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
-    env:
-      DENO_DIR: ${{ runner.temp }}/deno-cache
+      id-token: write
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Prepare Deno cache directory
-        run: mkdir -p "$DENO_DIR"
-
-      - uses: denoland/setup-deno@v2
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
 
-      - uses: actions/setup-node@v4
+      - name: Configure Deno cache
+        run: |
+          echo "DENO_DIR=$RUNNER_TEMP/deno" >> $GITHUB_ENV
+          mkdir -p "$RUNNER_TEMP/deno"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org/'
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
 
       - name: Build npm package
         run: deno task build
 
-      - name: Setup npm auth
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+      - name: Install npm dependencies (for publish check)
+        working-directory: npm
+        run: npm ci
 
-      - name: Check npm publish
-        run: |
-          cd npm
-          npm publish --access public --dry-run
+      - name: Dry run publish
+        working-directory: npm
+        run: npm publish --access public --dry-run
 
       - name: Publish to npm
-        run: |
-          cd npm
-          npm publish --provenance --access public
+        working-directory: npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
