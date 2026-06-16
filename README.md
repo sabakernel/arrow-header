@@ -1,14 +1,11 @@
-# arrow-header
-
 [![JSR](https://jsr.io/badges/@sabakernel/arrow-header)](https://jsr.io/@sabakernel/arrow-header)
+[![npm](https://img.shields.io/npm/v/@sabakernel/arrow-header)](https://www.npmjs.com/package/@sabakernel/arrow-header)
 
 JSR: https://jsr.io/@sabakernel/arrow-header
 
----
-Japanese version: [README.ja.md](README.ja.md)
+npm: https://www.npmjs.com/package/@sabakernel/arrow-header
 
-Note: This English README was produced using machine translation. Please refer to the Japanese
-original above for the authoritative text.
+# arrow-header
 
 `arrow-header` is a small library to parse and build a custom fixed-length header format separated
 by the `>` character, for example:
@@ -28,6 +25,7 @@ by the `>` character, for example:
   (content) appended after the header.
 - BigInt support: `ContentSize` is treated as a `bigint` (positive Int64 range), so large payloads
   are supported.
+
 ---
 
 ## Usage
@@ -104,3 +102,8 @@ Output:
   `>` offers better clarity while debugging.
 - Stream semantics: in streaming scenarios like `Header -> Content -> Header...`, `>` reads
   naturally as an arrow/separator between segments.
+
+## Japanese version: [README.ja.md](README.ja.md)
+
+Note: This English README was produced using machine translation. Please refer to the Japanese
+original above for the authoritative text.
