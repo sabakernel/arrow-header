@@ -196,7 +196,7 @@ Deno.test("Head ContentSizeStartWith'0'", () => {
   );
 });
 
-// ContentSizeが0のみ（単体の0）のとき
+// ContentSizeが0のみ(単体の0)のとき
 Deno.test('Head ContentSizeIsZero', () => {
   const h = {
     ContentVersion: 'PROTOCOLNAME.v1',
@@ -224,4 +224,19 @@ Deno.test('Head NegativeContentSize', () => {
     Error,
     'invalid contentSize',
   );
+});
+
+// すべてのフィールドが空だったとき (正常系)
+Deno.test('Head EmptyFields round-trip', () => {
+  const h = {
+    ContentVersion: '',
+    ContentType: '',
+    ContentSize: 0n,
+  };
+
+  const s = buildHead(h);
+
+  const got = readHead(s);
+
+  assertEquals(got, h, 'empty fields should round-trip correctly');
 });
